@@ -30,7 +30,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="SafeSpace" />
       </head>
       <body className={`${inter.className} bg-background text-text-primary`}>
-        <div className="max-w-lg mx-auto min-h-screen bg-background pb-24">
+        <div className="app-shell min-h-screen bg-background pt-20 pb-6 lg:pt-24">
           {children}
         </div>
       </body>

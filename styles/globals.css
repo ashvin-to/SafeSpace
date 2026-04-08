@@ -21,8 +21,17 @@ body {
   overflow-x: hidden;
 }
 
+:root {
+  --app-max-width: 1320px;
+}
+
 /* SafeSpace AI Custom Styles */
 @layer components {
+  .app-shell {
+    @apply w-full mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: var(--app-max-width);
+  }
+
   .btn-sos {
     @apply w-[88px] h-[88px] rounded-full bg-accent-danger text-white flex items-center justify-center cursor-pointer font-bold text-lg transition-all duration-200 shadow-sos hover:scale-95 active:scale-90 flex-col;
   }
@@ -32,7 +41,7 @@ body {
   }
 
   .btn-primary {
-    @apply px-6 py-3 rounded-btn bg-accent-danger text-white font-semibold transition-all duration-200 hover:brightness-110 active:scale-95;
+    @apply px-6 py-3 rounded-btn bg-accent-danger text-white font-semibold transition-all duration-200 hover:brightness-110 active:scale-95 shadow-lg shadow-accent-danger/25;
   }
 
   .btn-secondary {
@@ -44,7 +53,19 @@ body {
   }
 
   .card-base {
-    @apply bg-card-bg border border-border-color rounded-card p-6 shadow-card;
+    @apply bg-card-bg/95 border border-border-color rounded-card p-6 shadow-card backdrop-blur-sm;
+  }
+
+  .page-grid {
+    @apply grid grid-cols-1 xl:grid-cols-12 gap-6;
+  }
+
+  .page-grid-main {
+    @apply xl:col-span-8 space-y-6;
+  }
+
+  .page-grid-side {
+    @apply xl:col-span-4 space-y-6;
   }
 
   .risk-low {

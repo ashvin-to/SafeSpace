@@ -150,28 +150,18 @@ export default function Dashboard() {
       {/* Header */}
       <Header
         title="SafeSpace AI"
-        subtitle="Context-Aware Safety Assistant for Women, Children, and Tourists"
+        subtitle="Live safety dashboard"
       />
 
       {/* Main Content */}
-      <div className="relative overflow-hidden px-safe-area py-6 space-y-6">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.05]"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(255, 59, 48, 0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 59, 48, 0.35) 1px, transparent 1px)',
-            backgroundSize: '44px 44px',
-          }}
-        />
-        <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-accent-danger/20 blur-3xl" />
+      <div className="px-safe-area py-4 lg:py-5 space-y-4">
 
-        <section className="card-base border border-border-color/80 relative overflow-hidden">
+        <section className="card-base border border-border-color/80 relative overflow-hidden py-4">
           <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-accent-danger to-transparent" />
-          <p className="text-caption text-text-secondary">LIVE SAFETY STATUS</p>
-          <h2 className="text-header-lg mt-2">Stay alert. Help is one tap away.</h2>
-          <p className="text-body-sm text-text-secondary mt-2">
-            SOS is now centered for faster emergency access on mobile browsers.
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-caption text-text-secondary">LIVE SAFETY STATUS</p>
+            <p className="text-body-sm text-text-secondary">SOS ready</p>
+          </div>
         </section>
 
         {/* Location Error Alert */}
@@ -194,123 +184,118 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Current Location */}
-        {location && (
-          <div className="card-base">
-            <div className="flex items-center gap-2 mb-2">
-              <MapPin className="w-5 h-5 text-text-secondary" />
-              <p className="text-caption text-text-secondary">CURRENT LOCATION</p>
+        <div className="page-grid">
+          <div className="page-grid-main">
+            {/* Risk Score Card */}
+            <RiskScoreCard riskScore={riskScore} isLoading={riskLoading} />
+
+            {/* Safe Routes */}
+            <div>
+              <h2 className="text-header-lg mb-4">Safe Route Options</h2>
+              <div className="space-y-4">
+                {mockRoutes.map((route, idx) => (
+                  <RouteCard
+                    key={route.id}
+                    route={route}
+                    isRecommended={idx === 0}
+                    onStartNavigation={() => handleNavigate(route)}
+                  />
+                ))}
+              </div>
             </div>
-            <p className="text-body-base">
-              ({location.latitude.toFixed(4)}, {location.longitude.toFixed(4)})
-            </p>
-            <p className="text-body-sm text-text-secondary mt-2">
-              Accuracy: ±{location.accuracy.toFixed(0)}m
-            </p>
+
+            {/* Emergency Contacts */}
+            <div>
+              <h2 className="text-header-lg mb-4">Emergency Contacts</h2>
+              {contactsLoading ? (
+                <div className="card-base">
+                  <p className="text-text-secondary">Loading contacts...</p>
+                </div>
+              ) : contacts.length === 0 ? (
+                <div className="card-base">
+                  <p className="text-text-secondary">No emergency contacts added yet. Go to the Contacts page to add one.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {contacts.map((contact) => (
+                    <EmergencyContactItem
+                      key={contact.id}
+                      contact={contact}
+                      isActive={isActive}
+                      onCall={() => {
+                        try {
+                          const result = placeEmergencyCall({
+                            name: contact.name,
+                            phone: contact.phone,
+                          })
+
+                          addNotification(
+                            `Calling ${contact.name}`,
+                            result.mode === 'dialer'
+                              ? `Opening phone dialer for ${contact.phone}`
+                              : 'Opening WhatsApp. Phone dialer unavailable.',
+                            'INFO'
+                          )
+                        } catch {
+                          addNotification(
+                            'Call Failed',
+                            `No valid phone number found for ${contact.name}`,
+                            'WARNING'
+                          )
+                        }
+                      }}
+                      onEdit={() =>
+                        addNotification(
+                          'Edit Contact',
+                          `Opening edit dialog for ${contact.name}`,
+                          'INFO'
+                        )
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        )}
 
-        {/* Risk Score Card */}
-        <RiskScoreCard riskScore={riskScore} isLoading={riskLoading} />
+          <div className="page-grid-side">
+            {/* Current Location */}
+            {location && (
+              <div className="card-base">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="w-5 h-5 text-text-secondary" />
+                  <p className="text-caption text-text-secondary">CURRENT LOCATION</p>
+                </div>
+                <p className="text-body-base">
+                  ({location.latitude.toFixed(4)}, {location.longitude.toFixed(4)})
+                </p>
+                <p className="text-body-sm text-text-secondary mt-2">
+                  Accuracy: ±{location.accuracy.toFixed(0)}m
+                </p>
+              </div>
+            )}
 
-        {/* Safety Coverage */}
-        <div className="card-base">
-          <p className="text-caption text-text-secondary mb-3">SAFETY COVERAGE</p>
-          <div className="space-y-2 text-body-sm">
-            <p>
-              <span className="text-accent-danger font-semibold">Women:</span> proactive route
-              alerts, emergency escalation, and trusted-contact tracking.
-            </p>
-            <p>
-              <span className="text-accent-danger font-semibold">Children:</span> guardian
-              check-ins, geofence notifications, and quick caregiver SOS.
-            </p>
-            <p>
-              <span className="text-accent-danger font-semibold">Tourists:</span> unfamiliar-area
-              risk scoring, safe transit suggestions, and multilingual emergency cues.
-            </p>
-          </div>
-        </div>
-
-        {/* Safe Routes */}
-        <div>
-          <h2 className="text-header-lg mb-4">Safe Route Options</h2>
-          <div className="space-y-4">
-            {mockRoutes.map((route, idx) => (
-              <RouteCard
-                key={route.id}
-                route={route}
-                isRecommended={idx === 0}
-                onStartNavigation={() => handleNavigate(route)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Emergency Contacts */}
-        <div>
-          <h2 className="text-header-lg mb-4">Emergency Contacts</h2>
-          {contactsLoading ? (
+            {/* Safety Coverage */}
             <div className="card-base">
-              <p className="text-text-secondary">Loading contacts...</p>
+              <p className="text-caption text-text-secondary mb-2">SAFETY COVERAGE</p>
+              <div className="space-y-1 text-body-sm text-text-secondary">
+                <p>Women: proactive alerts and escalation.</p>
+                <p>Children: guardian check-ins and SOS.</p>
+                <p>Tourists: route risk guidance.</p>
+              </div>
             </div>
-          ) : contacts.length === 0 ? (
-            <div className="card-base">
-              <p className="text-text-secondary">No emergency contacts added yet. Go to the Contacts page to add one.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {contacts.map((contact) => (
-                <EmergencyContactItem
-                  key={contact.id}
-                  contact={contact}
-                  isActive={isActive}
-                  onCall={() => {
-                    try {
-                      const result = placeEmergencyCall({
-                        name: contact.name,
-                        phone: contact.phone,
-                      })
 
-                      addNotification(
-                        `Calling ${contact.name}`,
-                        result.mode === 'dialer'
-                          ? `Opening phone dialer for ${contact.phone}`
-                          : 'Opening WhatsApp. Phone dialer unavailable.',
-                        'INFO'
-                      )
-                    } catch {
-                      addNotification(
-                        'Call Failed',
-                        `No valid phone number found for ${contact.name}`,
-                        'WARNING'
-                      )
-                    }
-                  }}
-                  onEdit={() =>
-                    addNotification(
-                      'Edit Contact',
-                      `Opening edit dialog for ${contact.name}`,
-                      'INFO'
-                    )
-                  }
-                />
-              ))}
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 xl:grid-cols-1 gap-4">
+              <div className="card-base">
+                <p className="text-caption text-text-secondary mb-2">ROUTES AVAILABLE</p>
+                <p className="text-3xl font-bold text-accent-safe">{mockRoutes.length}</p>
+              </div>
+              <div className="card-base">
+                <p className="text-caption text-text-secondary mb-2">TRUSTED CONTACTS</p>
+                <p className="text-3xl font-bold text-accent-safe">{contacts.length}</p>
+              </div>
             </div>
-          )}
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="card-base">
-            <p className="text-caption text-text-secondary mb-2">ROUTES AVAILABLE</p>
-            <p className="text-3xl font-bold text-accent-safe">{mockRoutes.length}</p>
-          </div>
-          <div className="card-base">
-            <p className="text-caption text-text-secondary mb-2">TRUSTED CONTACTS</p>
-            <p className="text-3xl font-bold text-accent-safe">
-              {contacts.length}
-            </p>
           </div>
         </div>
       </div>
@@ -324,11 +309,11 @@ export default function Dashboard() {
       <Navigation onLogout={handleLogout} />
 
       {/* Notifications - Temporary (top center) */}
-      <div className="fixed top-0 left-0 right-0 px-safe-area pt-4 z-40 pointer-events-none">
+      <div className="fixed top-20 left-0 right-0 px-safe-area pt-2 z-40 pointer-events-none">
         {notifications.map((notif) => (
           <div
             key={notif.id}
-            className="card-base mb-3 pointer-events-auto cursor-pointer hover:brightness-110 transition-all"
+            className="card-base mb-3 pointer-events-auto cursor-pointer hover:brightness-110 transition-all max-w-xl ml-auto"
             onClick={() => removeNotification(notif.id)}
           >
             <p className="text-caption font-semibold text-accent-danger">

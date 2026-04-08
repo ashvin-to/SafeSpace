@@ -264,13 +264,13 @@ export default function RoutesPage() {
         subtitle="Real routes powered by OSRM routing engine"
       />
 
-      <div className="px-safe-area py-6 space-y-4">
+      <div className="px-safe-area py-6 lg:py-8 space-y-5">
         {/* Destination Selector */}
         {!selectedDestination && (
           <div className="card-base border border-accent-danger/20 bg-accent-danger/5">
             <p className="text-caption text-text-secondary font-semibold mb-3">SELECT A DESTINATION</p>
             <div className="space-y-3">
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={destinationInput}
@@ -334,7 +334,7 @@ export default function RoutesPage() {
               Google Maps preview for visual confirmation. Routes are still calculated by OSRM.
             </p>
 
-            <div className="mt-3 space-y-2">
+            <div className="mt-4 space-y-2">
               <p className="text-caption text-text-secondary">ALERT CONTACT FOR TIMER</p>
               {contacts.length > 0 ? (
                 <select
