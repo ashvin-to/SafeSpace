@@ -10,6 +10,7 @@ import {
   Alert,
   Navigation,
   AuthGate,
+  LocationMap,
 } from '@/components'
 import {
   useRiskScore,
@@ -197,11 +198,14 @@ export default function Dashboard() {
         {/* Current Location */}
         {location && (
           <div className="card-base">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-4">
               <MapPin className="w-5 h-5 text-text-secondary" />
               <p className="text-caption text-text-secondary">CURRENT LOCATION</p>
             </div>
-            <p className="text-body-base">
+            
+            <LocationMap latitude={location.latitude} longitude={location.longitude} />
+            
+            <p className="text-body-base mt-4">
               ({location.latitude.toFixed(4)}, {location.longitude.toFixed(4)})
             </p>
             <p className="text-body-sm text-text-secondary mt-2">
