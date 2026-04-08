@@ -1,7 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 import { Header, Navigation, AuthGate } from '@/components'
+import { useLocalStorage } from '@/hooks'
+import { AudienceMode } from '@/types'
+import { DEFAULT_AUDIENCE_MODE, PREFERENCE_KEYS } from '@/lib/preferences'
 import {
   Bell,
   Lock,
@@ -47,9 +50,13 @@ function SettingItem({
 }
 
 export default function SettingsPage() {
-  const [riskPreference, setRiskPreference] = useState(50)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
-  const [locationAlwaysOn, setLocationAlwaysOn] = useState(false)
+  const [riskPreference, setRiskPreference] = useLocalStorage<number>('safespace.riskPreference', 50)
+  const [notificationsEnabled, setNotificationsEnabled] = useLocalStorage<boolean>('safespace.notificationsEnabled', true)
+  const [locationAlwaysOn, setLocationAlwaysOn] = useLocalStorage<boolean>('safespace.locationAlwaysOn', false)
+  const [audienceMode, setAudienceMode] = useLocalStorage<AudienceMode>(
+    PREFERENCE_KEYS.audienceMode,
+    DEFAULT_AUDIENCE_MODE
+  )
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
@@ -84,6 +91,33 @@ export default function SettingsPage() {
                   </span>
                   <span>Aggressive</span>
                 </div>
+              </div>
+            </div>
+
+            <div className="card-base">
+              <p className="text-body-base font-semibold mb-3">Primary Protection Profile</p>
+              <p className="text-body-sm text-text-secondary mb-4">
+                This profile is used by dashboard risk and route recommendations.
+              </p>
+              <div className="grid sm:grid-cols-3 gap-2">
+                {([
+                  { value: 'women', label: 'Women' },
+                  { value: 'children', label: 'Children' },
+                  { value: 'tourists', label: 'Tourists' },
+                ] as { value: AudienceMode; label: string }[]).map((mode) => (
+                  <button
+                    key={mode.value}
+                    type="button"
+                    onClick={() => setAudienceMode(mode.value)}
+                    className={`px-3 py-2 rounded-card border text-body-sm font-semibold transition-all ${
+                      audienceMode === mode.value
+                        ? 'border-accent-safe text-text-primary bg-accent-safe/10'
+                        : 'border-border-color text-text-secondary hover:border-accent-safe/50'
+                    }`}
+                  >
+                    {mode.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -129,6 +163,7 @@ export default function SettingsPage() {
             <div className="card-base">
               <p className="text-caption text-text-secondary font-semibold mb-2">PROFILE STATUS</p>
               <p className="text-body-sm text-text-secondary">Logged in as <span className="text-text-primary font-semibold">user@example.com</span></p>
+              <p className="text-body-sm text-text-secondary mt-2">Active audience mode: <span className="text-text-primary font-semibold capitalize">{audienceMode}</span>.</p>
               <p className="text-body-sm text-text-secondary mt-2">Safety profile adapts based on your location, route selection, and risk tolerance.</p>
             </div>
 

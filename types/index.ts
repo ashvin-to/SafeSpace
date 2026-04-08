@@ -2,6 +2,8 @@
 
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
 
+export type AudienceMode = 'women' | 'children' | 'tourists'
+
 export interface RiskScore {
   score: number // 0-100
   level: RiskLevel
