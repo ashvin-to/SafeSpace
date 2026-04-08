@@ -2,7 +2,7 @@
 
 > Proactive Protection. Intelligent Alerts. Zero Compromise on Speed.
 
-A modern web application for real-time personal safety with AI-powered risk analysis, intelligent route recommendations, and emergency response coordination.
+A modern web application for real-time personal safety for women, children, and tourists with AI-powered risk analysis, intelligent route recommendations, and emergency response coordination.
 
 ## 🚀 Quick Start
 
@@ -30,6 +30,27 @@ pnpm dev
 # or
 yarn dev
 ```
+
+### Database + Login Setup
+
+```bash
+# 1) Create env file
+cp .env.example .env.local
+
+# 2) Generate Prisma client
+npm run db:generate
+
+# 3) Create/update SQLite schema
+npm run db:push
+
+# 4) Start app
+npm run dev
+```
+
+Then open:
+
+- `http://localhost:3000/register` to create a user
+- `http://localhost:3000/login` to sign in
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
@@ -104,6 +125,8 @@ safespace-ai/
 - [x] Risk score display with factors
 - [x] Safe route recommendations
 - [x] Emergency contacts list
+- [x] Database-backed contacts CRUD (Prisma)
+- [x] Login & registration flow (JWT cookie auth)
 - [x] Navigation interface
 - [x] Settings page
 - [x] Responsive design (mobile-first)
@@ -192,6 +215,24 @@ Optimized for all screen sizes:
 
 ## 🚀 Deployment
 
+### Two Web Apps Included
+
+This project now includes two dedicated web app experiences:
+
+- **Desktop Complete Web App**: `/webapp-desktop`
+- **Mobile Browser Web App**: `/webapp-mobile`
+
+Both use the same call behavior:
+
+1. If phone dialer is available, it opens a real phone call (`tel:`).
+2. If phone dialer is not available, it immediately starts a web call fallback.
+
+You can set a custom fallback call base URL with:
+
+```env
+NEXT_PUBLIC_IMMEDIATE_CALL_BASE_URL=https://meet.jit.si
+```
+
 ### Vercel (Recommended)
 ```bash
 # Push to GitHub
@@ -209,6 +250,16 @@ docker build -t safespace-ai .
 # Run container
 docker run -p 3000:3000 safespace-ai
 ```
+
+Before production deploy, set secure values for:
+
+- `DATABASE_URL`
+- `JWT_SECRET`
+
+After deploy, open:
+
+- `https://your-domain/webapp-desktop`
+- `https://your-domain/webapp-mobile`
 
 ## 📊 Performance Targets
 

@@ -9,6 +9,7 @@ import {
   Header,
   Alert,
   Navigation,
+  AuthGate,
 } from '@/components'
 import {
   useRiskScore,
@@ -17,9 +18,10 @@ import {
   useNotifications,
 } from '@/hooks'
 import { SafeRoute, EmergencyContact } from '@/types'
-import { MapPin, AlertCircle } from 'lucide-react'
+import { MapPin } from 'lucide-react'
+import { placeEmergencyCall } from '@/utils/call'
 
-// Mock data
+// Mock routes data
 const mockRoutes: SafeRoute[] = [
   {
     id: '1',
@@ -43,38 +45,35 @@ const mockRoutes: SafeRoute[] = [
   },
 ]
 
-const mockContacts: (EmergencyContact & { status?: 'pending' | 'notified' | 'responded' })[] = [
-  {
-    id: '1',
-    name: 'Sarah Chen',
-    phone: '+1-555-0123',
-    email: 'sarah@example.com',
-    relationship: 'Sister',
-    priority: 1,
-    isVerified: true,
-    createdAt: new Date(),
-    status: 'pending',
-  },
-  {
-    id: '2',
-    name: 'Mom',
-    phone: '+1-555-0456',
-    email: 'mom@example.com',
-    relationship: 'Mother',
-    priority: 2,
-    isVerified: true,
-    createdAt: new Date(),
-    status: 'pending',
-  },
-]
-
 export default function Dashboard() {
   const { riskScore, isLoading: riskLoading } = useRiskScore(3000)
   const { location, error: locationError } = useGeolocation()
   const { isActive, triggerSOS, cancelSOS, notifiedContacts, addNotifiedContact } =
     useEmergencySession()
   const { notifications, addNotification, removeNotification } = useNotifications()
-  const [selectedRoute, setSelectedRoute] = useState<SafeRoute | null>(null)
+  
+  // Fetch real contacts from API
+  const [contacts, setContacts] = useState<EmergencyContact[]>([])
+  const [contactsLoading, setContactsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        setContactsLoading(true)
+        const response = await fetch('/api/contacts', { credentials: 'include' })
+        if (response.ok) {
+          const data = await response.json()
+          setContacts(data.contacts || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch contacts:', error)
+      } finally {
+        setContactsLoading(false)
+      }
+    }
+
+    fetchContacts()
+  }, [])
 
   // Handle SOS trigger
   const handleSOSTrigger = () => {
@@ -85,16 +84,55 @@ export default function Dashboard() {
       'SOS'
     )
 
-    // Simulate notifying contacts
-    mockContacts.forEach((contact) => {
+    // Immediately call the highest priority contact
+    if (contacts.length > 0) {
+      const primaryContact = contacts[0]
+      setTimeout(() => {
+        addNotification(
+          `Calling ${primaryContact.name}`,
+          `Initiating emergency call...`,
+          'INFO'
+        )
+        
+        try {
+          const result = placeEmergencyCall({
+            name: primaryContact.name,
+            phone: primaryContact.phone,
+          })
+          
+          addNotification(
+            `${primaryContact.name} dial initiated`,
+            result.mode === 'dialer'
+              ? `Opening phone dialer for ${primaryContact.phone}`
+              : 'Opening WhatsApp. Phone dialer unavailable.',
+            'INFO'
+          )
+        } catch (error) {
+          addNotification(
+            'Call Failed',
+            `Could not call ${primaryContact.name}`,
+            'WARNING'
+          )
+        }
+      }, 500)
+    }
+
+    // Simulate notifying other contacts
+    contacts.forEach((contact, idx) => {
       setTimeout(() => {
         addNotifiedContact(contact.id)
-      }, 500)
+        if (idx > 0) { // Notify about secondary contacts
+          addNotification(
+            `Notified ${contact.name}`,
+            `Contact marked as notified`,
+            'INFO'
+          )
+        }
+      }, 500 + idx * 200)
     })
   }
 
   const handleNavigate = (route: SafeRoute) => {
-    setSelectedRoute(route)
     addNotification(
       '📍 Navigation Started',
       `Navigating via ${route.distance.toFixed(1)}km route`,
@@ -102,16 +140,40 @@ export default function Dashboard() {
     )
   }
 
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    window.location.href = '/login'
+  }
+
   return (
-    <>
+    <AuthGate>
       {/* Header */}
       <Header
         title="SafeSpace AI"
-        subtitle="Context-Aware Safety Assistant"
+        subtitle="Context-Aware Safety Assistant for Women, Children, and Tourists"
       />
 
       {/* Main Content */}
-      <div className="px-safe-area py-6 space-y-6">
+      <div className="relative overflow-hidden px-safe-area py-6 space-y-6">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255, 59, 48, 0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 59, 48, 0.35) 1px, transparent 1px)',
+            backgroundSize: '44px 44px',
+          }}
+        />
+        <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-accent-danger/20 blur-3xl" />
+
+        <section className="card-base border border-border-color/80 relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-accent-danger to-transparent" />
+          <p className="text-caption text-text-secondary">LIVE SAFETY STATUS</p>
+          <h2 className="text-header-lg mt-2">Stay alert. Help is one tap away.</h2>
+          <p className="text-body-sm text-text-secondary mt-2">
+            SOS is now centered for faster emergency access on mobile browsers.
+          </p>
+        </section>
+
         {/* Location Error Alert */}
         {locationError && (
           <Alert
@@ -151,6 +213,25 @@ export default function Dashboard() {
         {/* Risk Score Card */}
         <RiskScoreCard riskScore={riskScore} isLoading={riskLoading} />
 
+        {/* Safety Coverage */}
+        <div className="card-base">
+          <p className="text-caption text-text-secondary mb-3">SAFETY COVERAGE</p>
+          <div className="space-y-2 text-body-sm">
+            <p>
+              <span className="text-accent-danger font-semibold">Women:</span> proactive route
+              alerts, emergency escalation, and trusted-contact tracking.
+            </p>
+            <p>
+              <span className="text-accent-danger font-semibold">Children:</span> guardian
+              check-ins, geofence notifications, and quick caregiver SOS.
+            </p>
+            <p>
+              <span className="text-accent-danger font-semibold">Tourists:</span> unfamiliar-area
+              risk scoring, safe transit suggestions, and multilingual emergency cues.
+            </p>
+          </div>
+        </div>
+
         {/* Safe Routes */}
         <div>
           <h2 className="text-header-lg mb-4">Safe Route Options</h2>
@@ -160,7 +241,7 @@ export default function Dashboard() {
                 key={route.id}
                 route={route}
                 isRecommended={idx === 0}
-onStartNavigation={() => handleNavigate(route)}
+                onStartNavigation={() => handleNavigate(route)}
               />
             ))}
           </div>
@@ -169,29 +250,54 @@ onStartNavigation={() => handleNavigate(route)}
         {/* Emergency Contacts */}
         <div>
           <h2 className="text-header-lg mb-4">Emergency Contacts</h2>
-          <div className="space-y-4">
-            {mockContacts.map((contact) => (
-              <EmergencyContactItem
-                key={contact.id}
-                contact={contact}
-                isActive={isActive}
-                onCall={() =>
-                  addNotification(
-                    `Calling ${contact.name}`,
-                    `Initiating call to ${contact.phone}`,
-                    'INFO'
-                  )
-                }
-                onEdit={() =>
-                  addNotification(
-                    'Edit Contact',
-                    `Opening edit dialog for ${contact.name}`,
-                    'INFO'
-                  )
-                }
-              />
-            ))}
-          </div>
+          {contactsLoading ? (
+            <div className="card-base">
+              <p className="text-text-secondary">Loading contacts...</p>
+            </div>
+          ) : contacts.length === 0 ? (
+            <div className="card-base">
+              <p className="text-text-secondary">No emergency contacts added yet. Go to the Contacts page to add one.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {contacts.map((contact) => (
+                <EmergencyContactItem
+                  key={contact.id}
+                  contact={contact}
+                  isActive={isActive}
+                  onCall={() => {
+                    try {
+                      const result = placeEmergencyCall({
+                        name: contact.name,
+                        phone: contact.phone,
+                      })
+
+                      addNotification(
+                        `Calling ${contact.name}`,
+                        result.mode === 'dialer'
+                          ? `Opening phone dialer for ${contact.phone}`
+                          : 'Opening WhatsApp. Phone dialer unavailable.',
+                        'INFO'
+                      )
+                    } catch {
+                      addNotification(
+                        'Call Failed',
+                        `No valid phone number found for ${contact.name}`,
+                        'WARNING'
+                      )
+                    }
+                  }}
+                  onEdit={() =>
+                    addNotification(
+                      'Edit Contact',
+                      `Opening edit dialog for ${contact.name}`,
+                      'INFO'
+                    )
+                  }
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quick Stats */}
@@ -203,19 +309,19 @@ onStartNavigation={() => handleNavigate(route)}
           <div className="card-base">
             <p className="text-caption text-text-secondary mb-2">TRUSTED CONTACTS</p>
             <p className="text-3xl font-bold text-accent-safe">
-              {mockContacts.length}
+              {contacts.length}
             </p>
           </div>
         </div>
       </div>
 
       {/* SOS Button (Floating) */}
-      <div className="fixed bottom-28 right-6 z-50">
+      <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50">
         <SOSButton onTrigger={handleSOSTrigger} isActive={isActive} />
       </div>
 
       {/* Navigation */}
-      <Navigation onLogout={() => addNotification('Logged Out', 'see you soon', 'INFO')} />
+      <Navigation onLogout={handleLogout} />
 
       {/* Notifications - Temporary (top center) */}
       <div className="fixed top-0 left-0 right-0 px-safe-area pt-4 z-40 pointer-events-none">
@@ -223,7 +329,7 @@ onStartNavigation={() => handleNavigate(route)}
           <div
             key={notif.id}
             className="card-base mb-3 pointer-events-auto cursor-pointer hover:brightness-110 transition-all"
-onClick={() => removeNotification(notif.id)}
+            onClick={() => removeNotification(notif.id)}
           >
             <p className="text-caption font-semibold text-accent-danger">
               {notif.title}
@@ -232,6 +338,6 @@ onClick={() => removeNotification(notif.id)}
           </div>
         ))}
       </div>
-    </>
+    </AuthGate>
   )
 }

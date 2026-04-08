@@ -115,7 +115,6 @@ export function useEmergencySession() {
  */
 export function useWebSocket(url: string) {
   const [isConnected, setIsConnected] = useState(false)
-  const [lastMessage, setLastMessage] = useState<any>(null)
 
   useEffect(() => {
     // In production, connect to actual WebSocket
@@ -130,7 +129,7 @@ export function useWebSocket(url: string) {
     return () => setIsConnected(false)
   }, [url])
 
-  return { isConnected, lastMessage }
+  return { isConnected }
 }
 
 /**

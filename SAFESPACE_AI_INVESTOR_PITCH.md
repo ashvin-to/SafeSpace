@@ -30,8 +30,9 @@ Unlike traditional safety apps that react *after* danger occurs, SafeSpace AI **
 
 ### Target Customer Segments
 1. **Primary**: Solo female commuters (25-45, urban, tech-savvy)
-2. **Secondary**: Travelers, corporate employees (business travel safety)
-3. **Tertiary**: Nightshift workers, gig economy workers
+2. **Secondary**: Parents and guardians seeking child safety monitoring and rapid escalation
+3. **Tertiary**: Tourists, travelers, and corporate employees in unfamiliar environments
+4. **Additional**: Nightshift workers and gig economy workers
 
 ---
 
@@ -116,8 +117,8 @@ Unlike traditional safety apps that react *after* danger occurs, SafeSpace AI **
 
 ### Phase 0: Pre-Launch (Months -2 to 0)
 - [ ] Beta testing with 500-1000 early adopters (Reddit, Facebook groups)
-- [ ] Influencer partnerships (women's safety advocates, travel influencers)
-- [ ] Media outreach (tech blogs, women's safety publications)
+- [ ] Influencer partnerships (women's safety advocates, parenting creators, travel influencers)
+- [ ] Media outreach (tech blogs, women's/child safety publications, travel media)
 - [ ] Pre-register on app stores
 
 ### Phase 1: Launch (Month 0-1)
@@ -134,10 +135,10 @@ Unlike traditional safety apps that react *after* danger occurs, SafeSpace AI **
 
 ### Acquisition Channels
 1. **Organic**: Word-of-mouth, app store optimization (ASO)
-2. **Paid**: Instagram, TikTok, Google Ads (women 25-45 targeting)
-3. **Partnerships**: HR platforms, ride-sharing apps, campus safety programs
-4. **PR**: Tech blogs, women's safety media
-5. **Community**: Reddit, Facebook safety groups, university partnerships
+2. **Paid**: Instagram, TikTok, Google Ads (women commuters, parents, travelers)
+3. **Partnerships**: HR platforms, ride-sharing apps, schools, travel/hospitality partners
+4. **PR**: Tech blogs, women's/child safety media, travel publications
+5. **Community**: Reddit, parenting communities, Facebook safety groups, university networks
 
 ---
 

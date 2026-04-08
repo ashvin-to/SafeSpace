@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState } from 'react'
-import { AlertCircle } from 'lucide-react'
 
 interface SOSButtonProps {
   onTrigger: () => void

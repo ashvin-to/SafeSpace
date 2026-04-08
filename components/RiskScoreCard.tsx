@@ -2,8 +2,8 @@
 
 import React, { useMemo } from 'react'
 import { RiskScore } from '@/types'
-import { getRiskColor, getRiskLevel, formatRiskScore } from '@/utils/helpers'
-import { AlertTriangle, Shield, AlertCircle } from 'lucide-react'
+import { getRiskColor, formatRiskScore } from '@/utils/helpers'
+import { Shield, AlertCircle, AlertTriangle } from 'lucide-react'
 
 interface RiskScoreCardProps {
   riskScore: RiskScore | null

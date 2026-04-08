@@ -6,11 +6,10 @@ import { X } from 'lucide-react'
 interface HeaderProps {
   title: string
   subtitle?: string
-  onBack?: () => void
   action?: React.ReactNode
 }
 
-export function Header({ title, subtitle, onBack, action }: HeaderProps) {
+export function Header({ title, subtitle, action }: HeaderProps) {
   return (
     <div className="bg-card-bg border-b border-border-color">
       <div className="max-w-lg mx-auto px-safe-area py-4 flex items-center justify-between">

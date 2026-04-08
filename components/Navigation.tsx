@@ -8,7 +8,6 @@ import {
   MapPin,
   Users,
   Settings,
-  AlertCircle,
   LogOut,
 } from 'lucide-react'
 
@@ -25,6 +24,16 @@ interface NavigationProps {
 
 export function Navigation({ onLogout }: NavigationProps) {
   const pathname = usePathname()
+
+  const handleLogout = async () => {
+    if (onLogout) {
+      onLogout()
+      return
+    }
+
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    window.location.href = '/login'
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card-bg border-t border-border-color safe-area">
@@ -50,7 +59,7 @@ export function Navigation({ onLogout }: NavigationProps) {
           )
         })}
         <button
-          onClick={onLogout}
+          onClick={handleLogout}
           className="flex flex-col items-center gap-1 py-3 px-4 text-text-secondary hover:text-accent-danger transition-colors"
           aria-label="Logout"
         >

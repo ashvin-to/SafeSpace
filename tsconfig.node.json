@@ -5,5 +5,5 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["next.config.ts", "postcss.config.js"]
+  "include": ["next.config.mjs", "postcss.config.js"]
 }

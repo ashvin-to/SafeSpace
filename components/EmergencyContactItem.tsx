@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { EmergencyContact } from '@/types'
-import { Phone, Mail, CheckCircle, AlertCircle, Clock } from 'lucide-react'
+import { Phone, Mail, CheckCircle, Clock } from 'lucide-react'
 import { formatTime } from '@/utils/helpers'
 
 interface EmergencyContactItemProps {
@@ -38,7 +38,7 @@ export function EmergencyContactItem({
       case 'notified':
         return `Notified (${contact.notifiedAt ? formatTime(contact.notifiedAt) : 'pending'})`
       case 'responded':
-        return `Respoding: "${contact.response}"`
+        return `Responded: "${contact.response}"`
       default:
         return 'Not yet contacted'
     }
@@ -46,14 +46,16 @@ export function EmergencyContactItem({
 
   return (
     <div
-      className={`card-base ${
+      className={`card-base relative overflow-hidden border border-border-color/80 transition-all duration-200 hover:border-accent-danger/50 ${
         isActive ? 'ring-2 ring-accent-danger' : ''
       }`}
     >
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-accent-danger to-transparent" />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-card-bg flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-background border border-border-color/70 flex items-center justify-center">
             <span className="font-bold text-accent-danger">
               {contact.name.charAt(0).toUpperCase()}
             </span>
@@ -90,7 +92,7 @@ export function EmergencyContactItem({
       </div>
 
       {/* Status */}
-      <div className="bg-background rounded-btn px-3 py-2 mb-3">
+      <div className="bg-background/80 border border-border-color/60 rounded-btn px-3 py-2 mb-3">
         <p className="text-caption text-text-secondary">{statusText}</p>
       </div>
 

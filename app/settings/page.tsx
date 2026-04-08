@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Header, Navigation, Alert } from '@/components'
+import { Header, Navigation, AuthGate } from '@/components'
 import {
   Bell,
   Lock,
@@ -51,8 +51,13 @@ export default function SettingsPage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [locationAlwaysOn, setLocationAlwaysOn] = useState(false)
 
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    window.location.href = '/login'
+  }
+
   return (
-    <>
+    <AuthGate>
       <Header title="Settings" subtitle="Customize your SafeSpace experience" />
 
       <div className="px-safe-area py-6 space-y-6">
@@ -171,7 +176,7 @@ export default function SettingsPage() {
               Change Password
             </button>
 
-            <button className="btn-ghost w-full text-accent-danger hover:bg-accent-danger hover:bg-opacity-10">
+            <button onClick={handleLogout} className="btn-ghost w-full text-accent-danger hover:bg-accent-danger hover:bg-opacity-10">
               <LogOut className="w-4 h-4 mr-2 inline" />
               Logout
             </button>
@@ -187,7 +192,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <Navigation />
-    </>
+      <Navigation onLogout={handleLogout} />
+    </AuthGate>
   )
 }

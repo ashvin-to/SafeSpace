@@ -3,7 +3,7 @@
 import React from 'react'
 import { SafeRoute } from '@/types'
 import { formatDistance, formatDuration, getRiskColor } from '@/utils/helpers'
-import { MapPin, Route, ThumbsUp, Clock, AlertTriangle } from 'lucide-react'
+import { MapPin, Route, ThumbsUp, Clock } from 'lucide-react'
 
 interface RouteCardProps {
   route: SafeRoute
@@ -17,12 +17,6 @@ export function RouteCard({
   onStartNavigation,
 }: RouteCardProps) {
   const riskColor = getRiskColor(route.riskScore)
-  const riskLabel =
-    route.riskScore < 33
-      ? 'SAFE'
-      : route.riskScore < 66
-      ? 'MEDIUM'
-      : 'HIGH RISK'
 
   return (
     <div
