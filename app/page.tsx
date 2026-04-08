@@ -46,8 +46,8 @@ const mockRoutes: SafeRoute[] = [
 ]
 
 export default function Dashboard() {
-  const { riskScore, isLoading: riskLoading } = useRiskScore(3000)
   const { location, error: locationError } = useGeolocation()
+  const { riskScore, isLoading: riskLoading } = useRiskScore(location, 60000)
   const { isActive, triggerSOS, cancelSOS, notifiedContacts, addNotifiedContact } =
     useEmergencySession()
   const { notifications, addNotification, removeNotification } = useNotifications()

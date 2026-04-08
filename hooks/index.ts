@@ -4,7 +4,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Location, RiskScore } from '@/types'
-import { generateMockRiskScore } from '@/utils/helpers'
 
 /**
  * Hook to get user's current location
@@ -53,23 +52,67 @@ export function useGeolocation() {
 }
 
 /**
- * Hook to simulate real-time risk score updates
+ * Hook to fetch live risk score updates from context-aware API
  */
-export function useRiskScore(interval: number = 5000) {
+export function useRiskScore(location: Location | null, interval: number = 60000) {
   const [riskScore, setRiskScore] = useState<RiskScore | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    setIsLoading(true)
-    setRiskScore(generateMockRiskScore())
-    setIsLoading(false)
+    if (!location) {
+      setIsLoading(true)
+      return
+    }
 
-    const timer = setInterval(() => {
-      setRiskScore(generateMockRiskScore())
-    }, interval)
+    let mounted = true
 
-    return () => clearInterval(timer)
-  }, [interval])
+    const fetchRiskScore = async () => {
+      try {
+        const response = await fetch(
+          `/api/risk?lat=${location.latitude}&lng=${location.longitude}&accuracy=${location.accuracy}`,
+          { credentials: 'include' }
+        )
+
+        if (!response.ok) {
+          throw new Error('Risk API request failed')
+        }
+
+        const data = await response.json()
+        if (!mounted) return
+
+        setRiskScore({
+          score: Number(data.score),
+          level: data.level,
+          confidence: Number(data.confidence),
+          factors: Array.isArray(data.factors) ? data.factors : [],
+          timestamp: new Date(data.timestamp || Date.now()),
+        })
+      } catch {
+        if (!mounted) return
+        setRiskScore((prev) =>
+          prev || {
+            score: 45,
+            level: 'MEDIUM',
+            confidence: 0.45,
+            factors: ['Live risk feed unavailable; using conservative fallback'],
+            timestamp: new Date(),
+          }
+        )
+      } finally {
+        if (mounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchRiskScore()
+    const timer = window.setInterval(fetchRiskScore, interval)
+
+    return () => {
+      mounted = false
+      window.clearInterval(timer)
+    }
+  }, [location, interval])
 
   return { riskScore, isLoading }
 }

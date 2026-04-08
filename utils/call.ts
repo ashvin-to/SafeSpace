@@ -3,6 +3,12 @@ export interface CallTarget {
   phone: string
 }
 
+export interface NotificationTarget {
+  name: string
+  phone?: string
+  email?: string | null
+}
+
 export interface CallResult {
   mode: 'dialer' | 'web'
   normalizedPhone: string
@@ -64,4 +70,19 @@ export function placeEmergencyCall(target: CallTarget): CallResult {
     normalizedPhone,
     fallbackUrl,
   }
+}
+
+export function createEmergencyMailtoUrl(
+  target: NotificationTarget,
+  message: string,
+  subject = 'SafeSpace arrival check'
+): string {
+  const safeSubject = encodeURIComponent(subject)
+  const safeMessage = encodeURIComponent(message)
+
+  if (!target.email) {
+    throw new Error('Missing email address')
+  }
+
+  return `mailto:${target.email}?subject=${safeSubject}&body=${safeMessage}`
 }

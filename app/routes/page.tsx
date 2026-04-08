@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Header,
   Navigation,
@@ -8,120 +8,66 @@ import {
   EmptyState,
   AuthGate,
 } from '@/components'
-import { SafeRoute } from '@/types'
+import { SafeRoute, EmergencyContact } from '@/types'
 import { MapPin, Navigation as NavIcon, Loader } from 'lucide-react'
+import { createEmergencyMailtoUrl, placeEmergencyCall } from '@/utils/call'
 
-interface MapContainerProps {
+interface GoogleMapPreviewProps {
   originLat: number
   originLng: number
   destLat: number
   destLng: number
-  routes: SafeRoute[]
-  mapKey: number
 }
 
-function InteractiveMap({ originLat, originLng, destLat, destLng, routes, mapKey }: MapContainerProps) {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstance = useRef<any>(null)
+function GoogleMapPreview({ originLat, originLng, destLat, destLng }: GoogleMapPreviewProps) {
+  const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || !mapRef.current) return
+  const directionsUrl = useMemo(
+    () =>
+      `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=walking`,
+    [originLat, originLng, destLat, destLng]
+  )
 
-    // Load Leaflet CSS and JS from CDN
-    const loadLeaflet = async () => {
-      const leafletWindow = window as any
-      if (!leafletWindow.L) {
-        const link = document.createElement('link')
-        link.rel = 'stylesheet'
-        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'
-        document.head.appendChild(link)
-
-        const script = document.createElement('script')
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'
-        script.async = true
-        script.onload = () => initializeMap()
-        document.body.appendChild(script)
-      } else {
-        initializeMap()
+  const previewUrl = useMemo(
+    () => {
+      if (googleApiKey) {
+        return `https://www.google.com/maps/embed/v1/directions?key=${googleApiKey}&origin=${originLat},${originLng}&destination=${destLat},${destLng}&mode=walking`
       }
-    }
+      return `https://www.google.com/maps?q=${destLat},${destLng}&z=15&output=embed`
+    },
+    [googleApiKey, originLat, originLng, destLat, destLng]
+  )
 
-    const initializeMap = () => {
-      if (!mapRef.current || mapInstance.current) return
-
-      const leafletWindow = window as any
-      const L = leafletWindow.L
-      const map = L.map(mapRef.current).setView(
-        [(originLat + destLat) / 2, (originLng + destLng) / 2],
-        12
-      )
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 19,
-      }).addTo(map)
-
-      // Add start marker
-      L.marker([originLat, originLng], {
-        icon: L.icon({
-          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-          shadowSize: [41, 41],
-        }),
-      })
-        .bindPopup('<b>Your Location</b>')
-        .openPopup()
-        .addTo(map)
-
-      // Add destination marker
-      L.marker([destLat, destLng], {
-        icon: L.icon({
-          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-          shadowSize: [41, 41],
-        }),
-      })
-        .bindPopup('<b>Destination</b>')
-        .addTo(map)
-
-      // Plot all routes
-      const colors = ['#FF3B30', '#FF9500', '#34C759']
-      routes.forEach((route, idx) => {
-        if (route.polyline && typeof route.polyline === 'object' && (route.polyline as any).coordinates) {
-          L.polyline(
-            (route.polyline as any).coordinates.map((c: any) => [c[1], c[0]]),
-            {
-              color: colors[idx % colors.length],
-              weight: idx === 0 ? 4 : 2,
-              opacity: idx === 0 ? 0.9 : 0.6,
-              dashArray: idx === 0 ? '' : '5, 5',
-            }
-          ).addTo(map)
-        }
-      })
-
-      mapInstance.current = map
-    }
-
-    loadLeaflet()
-
-    return () => {
-      if (mapInstance.current) {
-        mapInstance.current.remove()
-        mapInstance.current = null
-      }
-    }
-  }, [originLat, originLng, destLat, destLng, routes, mapKey])
+  const centerLat = (originLat + destLat) / 2
+  const centerLng = (originLng + destLng) / 2
+  const centerUrl = `https://www.google.com/maps?q=${centerLat},${centerLng}&z=13&output=embed`
 
   return (
-    <div
-      ref={mapRef}
-      className="w-full h-[400px] rounded-card border border-border-color bg-background"
-    />
+    <div className="space-y-3">
+      <iframe
+        title="Google Maps route preview"
+        src={previewUrl || centerUrl}
+        className="w-full h-[400px] rounded-card border border-border-color bg-background"
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+        allowFullScreen
+      />
+      <div className="flex flex-wrap items-center gap-3 text-caption">
+        <a
+          href={directionsUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="text-accent-danger hover:underline font-semibold"
+        >
+          Open in Google Maps
+        </a>
+        <span className="text-text-secondary">
+          {googleApiKey
+            ? 'Google Maps embed is using your API key.'
+            : 'No API key set. Using a basic Google preview fallback.'}
+        </span>
+      </div>
+    </div>
   )
 }
 
@@ -130,9 +76,61 @@ export default function RoutesPage() {
   const [destinationInput, setDestinationInput] = useState('')
   const [selectedDestination, setSelectedDestination] = useState<{ lat: number; lng: number } | null>(null)
   const [routes, setRoutes] = useState<SafeRoute[]>([])
+  const [contacts, setContacts] = useState<EmergencyContact[]>([])
+  const [selectedContactId, setSelectedContactId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [mapKey, setMapKey] = useState(0)
+  const [monitorRouteId, setMonitorRouteId] = useState<string | null>(null)
+  const [countdownEndsAt, setCountdownEndsAt] = useState<number | null>(null)
+  const [secondsLeft, setSecondsLeft] = useState<number>(30 * 60)
+  const [timeoutAlertSent, setTimeoutAlertSent] = useState(false)
+  const [monitorMessage, setMonitorMessage] = useState<string | null>(null)
+
+  const activeContact = contacts.find((c) => c.id === selectedContactId) || contacts[0]
+
+  const stopMonitor = (message?: string) => {
+    setMonitorRouteId(null)
+    setCountdownEndsAt(null)
+    setSecondsLeft(30 * 60)
+    setTimeoutAlertSent(false)
+    if (message) {
+      setMonitorMessage(message)
+    }
+  }
+
+  const triggerTimeoutAlert = useCallback(() => {
+    if (!activeContact) {
+      setMonitorMessage('Timer expired, but no emergency contact exists. Please add one in Contacts.')
+      setTimeoutAlertSent(true)
+      return
+    }
+
+    const destinationLabel = destinationInput || 'destination'
+    const alertMessage = `SafeSpace alert: I did not reach ${destinationLabel} within 30 minutes. Please check on me immediately.`
+
+    let emailTriggered = false
+    if (activeContact.email) {
+      try {
+        const mailtoUrl = createEmergencyMailtoUrl(activeContact, alertMessage, 'SafeSpace: arrival timeout alert')
+        window.location.href = mailtoUrl
+        setMonitorMessage(`Timer expired. Opened email alert for ${activeContact.name}.`)
+        emailTriggered = true
+      } catch {
+        // Fallback to call below
+      }
+    }
+
+    if (!emailTriggered) {
+      try {
+        placeEmergencyCall({ name: activeContact.name, phone: activeContact.phone })
+        setMonitorMessage(`Timer expired. Calling ${activeContact.name}.`)
+      } catch {
+        setMonitorMessage(`Timer expired, but could not notify ${activeContact.name}.`) 
+      }
+    }
+
+    setTimeoutAlertSent(true)
+  }, [activeContact, destinationInput])
 
   // Get user's current location on mount
   useEffect(() => {
@@ -155,6 +153,27 @@ export default function RoutesPage() {
     }
   }, [])
 
+  useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        const res = await fetch('/api/contacts', { credentials: 'include' })
+        if (!res.ok) {
+          return
+        }
+        const data = await res.json()
+        const loadedContacts: EmergencyContact[] = data.contacts || []
+        setContacts(loadedContacts)
+        if (loadedContacts.length > 0) {
+          setSelectedContactId((prev) => prev || loadedContacts[0].id)
+        }
+      } catch {
+        // noop
+      }
+    }
+
+    fetchContacts()
+  }, [])
+
   // Fetch routes when both current location and destination are set
   useEffect(() => {
     if (!currentLocation || !selectedDestination) {
@@ -172,7 +191,6 @@ export default function RoutesPage() {
         if (!response.ok) throw new Error('Failed to fetch routes')
         const data = await response.json()
         setRoutes(data.routes || [])
-        setMapKey((k) => k + 1)
       } catch (err) {
         setError('Could not calculate routes. Try a different destination.')
         console.error(err)
@@ -183,6 +201,24 @@ export default function RoutesPage() {
 
     fetchRoutes()
   }, [currentLocation, selectedDestination])
+
+  useEffect(() => {
+    if (!countdownEndsAt || timeoutAlertSent) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      const remaining = Math.max(0, Math.floor((countdownEndsAt - Date.now()) / 1000))
+      setSecondsLeft(remaining)
+
+      if (remaining <= 0) {
+        window.clearInterval(timer)
+        triggerTimeoutAlert()
+      }
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [countdownEndsAt, timeoutAlertSent, triggerTimeoutAlert])
 
   // Demo destinations
   const demoLocations: Record<string, { lat: number; lng: number }> = {
@@ -202,6 +238,19 @@ export default function RoutesPage() {
       setError('Destination not found. Try: Times Square, Central Park, Empire State, Brooklyn Bridge, Statue of Liberty')
     }
   }
+
+  const startThirtyMinuteMonitor = (route: SafeRoute) => {
+    setMonitorRouteId(route.id)
+    setCountdownEndsAt(Date.now() + 30 * 60 * 1000)
+    setSecondsLeft(30 * 60)
+    setTimeoutAlertSent(false)
+    setMonitorMessage(
+      `Journey monitor started for ${route.distance.toFixed(1)} km route. Confirm arrival within 30 minutes.`
+    )
+  }
+
+  const minutes = String(Math.floor(secondsLeft / 60)).padStart(2, '0')
+  const seconds = String(secondsLeft % 60).padStart(2, '0')
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
@@ -251,6 +300,12 @@ export default function RoutesPage() {
           </div>
         )}
 
+        {monitorMessage && (
+          <div className="card-base border border-accent-danger/30 bg-accent-danger/10">
+            <p className="text-body-sm text-text-primary">{monitorMessage}</p>
+          </div>
+        )}
+
         {/* Current Location Status */}
         {currentLocation && (
           <div className="card-base">
@@ -269,23 +324,68 @@ export default function RoutesPage() {
               {isLoading && <Loader className="w-4 h-4 animate-spin text-accent-danger" />}
             </div>
 
-            <InteractiveMap
+            <GoogleMapPreview
               originLat={currentLocation.lat}
               originLng={currentLocation.lng}
               destLat={selectedDestination.lat}
               destLng={selectedDestination.lng}
-              routes={routes}
-              mapKey={mapKey}
             />
             <p className="text-body-sm text-text-secondary mt-3">
-              Map powered by OpenStreetMap. Routes calculated by OSRM (Open Route Service Machine).
+              Google Maps preview for visual confirmation. Routes are still calculated by OSRM.
             </p>
+
+            <div className="mt-3 space-y-2">
+              <p className="text-caption text-text-secondary">ALERT CONTACT FOR TIMER</p>
+              {contacts.length > 0 ? (
+                <select
+                  value={selectedContactId}
+                  onChange={(e) => setSelectedContactId(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-border-color rounded-card text-text-primary"
+                >
+                  {contacts.map((contact) => (
+                    <option key={contact.id} value={contact.id}>
+                      {contact.name} ({contact.relationship})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-body-sm text-text-secondary">
+                  Add emergency contacts first so timeout alerts can notify someone.
+                </p>
+              )}
+            </div>
+
+            {monitorRouteId && (
+              <div className="mt-4 card-base border border-accent-danger/30 bg-accent-danger/10">
+                <p className="text-caption text-text-secondary mb-1">ARRIVAL COUNTDOWN (30 MIN)</p>
+                <p className="text-2xl font-bold text-accent-danger">{minutes}:{seconds}</p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => stopMonitor('Arrival confirmed. Timer stopped and no alert sent.')}
+                    className="btn-primary"
+                  >
+                    I reached safely
+                  </button>
+                  <button
+                    onClick={() => {
+                      triggerTimeoutAlert()
+                      stopMonitor()
+                    }}
+                    className="px-3 py-2 rounded-card border border-accent-danger text-accent-danger"
+                  >
+                    Notify now
+                  </button>
+                </div>
+              </div>
+            )}
+
             {selectedDestination && (
               <button
                 onClick={() => {
                   setSelectedDestination(null)
                   setRoutes([])
                   setDestinationInput('')
+                  stopMonitor()
                 }}
                 className="mt-3 text-accent-danger text-caption hover:underline font-semibold"
               >
@@ -311,7 +411,7 @@ export default function RoutesPage() {
                   route={route}
                   isRecommended={idx === 0}
                   onStartNavigation={() => {
-                    // In real app, start turn-by-turn navigation
+                    startThirtyMinuteMonitor(route)
                   }}
                 />
               ))}
