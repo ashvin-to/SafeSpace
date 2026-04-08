@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   RiskScoreCard,
   RouteCard,
@@ -13,14 +13,70 @@ import {
   LocationMap,
 } from '@/components'
 import {
-  useRiskScore,
   useEmergencySession,
   useGeolocation,
+  useRiskScore,
+  useLocalStorage,
   useNotifications,
 } from '@/hooks'
-import { SafeRoute, EmergencyContact } from '@/types'
-import { MapPin } from 'lucide-react'
+import { SafeRoute, EmergencyContact, AudienceMode, RiskScore } from '@/types'
+import { Baby, MapPin, Plane, ShieldAlert } from 'lucide-react'
 import { placeEmergencyCall } from '@/utils/call'
+import { DEFAULT_AUDIENCE_MODE, PREFERENCE_KEYS } from '@/lib/preferences'
+
+const audienceModes: {
+  id: AudienceMode
+  title: string
+  subtitle: string
+  badge: string
+  icon: React.ElementType
+}[] = [
+  {
+    id: 'women',
+    title: 'Women Safety',
+    subtitle: 'Proactive risk alerts and rapid escalation support.',
+    badge: 'Priority Monitoring',
+    icon: ShieldAlert,
+  },
+  {
+    id: 'children',
+    title: 'Child Safety',
+    subtitle: 'Guardian check-ins and low-friction emergency flows.',
+    badge: 'Guardian Linked',
+    icon: Baby,
+  },
+  {
+    id: 'tourists',
+    title: 'Tourist Safety',
+    subtitle: 'Safer route guidance in unfamiliar areas.',
+    badge: 'City Assist',
+    icon: Plane,
+  },
+]
+
+const audienceRiskBias: Record<AudienceMode, number> = {
+  women: 10,
+  children: 15,
+  tourists: 8,
+}
+
+const routeRiskBias: Record<AudienceMode, number> = {
+  women: 6,
+  children: 10,
+  tourists: 8,
+}
+
+const audienceModeFactors: Record<AudienceMode, string> = {
+  women: 'Women safety profile: increased sensitivity near low-visibility areas.',
+  children: 'Child safety profile: stricter threshold for isolated and high-speed corridors.',
+  tourists: 'Tourist safety profile: caution boosted for unfamiliar zones.',
+}
+
+const routeModeFeature: Record<AudienceMode, string> = {
+  women: 'enhanced_patrol_alignment',
+  children: 'guardian_friendly_segments',
+  tourists: 'landmark_assisted_guidance',
+}
 
 // Mock routes data
 const mockRoutes: SafeRoute[] = [
@@ -51,6 +107,10 @@ export default function Dashboard() {
   const { riskScore, isLoading: riskLoading } = useRiskScore(location, 60000)
   const { isActive, triggerSOS, cancelSOS, notifiedContacts, addNotifiedContact } =
     useEmergencySession()
+  const [audienceMode, setAudienceMode] = useLocalStorage<AudienceMode>(
+    PREFERENCE_KEYS.audienceMode,
+    DEFAULT_AUDIENCE_MODE
+  )
   const { notifications, addNotification, removeNotification } = useNotifications()
   
   // Fetch real contacts from API
@@ -133,25 +193,69 @@ export default function Dashboard() {
     })
   }
 
-  const handleNavigate = (route: SafeRoute) => {
-    addNotification(
-      '📍 Navigation Started',
-      `Navigating via ${route.distance.toFixed(1)}km route`,
-      'INFO'
-    )
-  }
-
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
     window.location.href = '/login'
   }
+
+  const handleAudienceMode = (mode: AudienceMode) => {
+    setAudienceMode(mode)
+
+    const audienceMessages: Record<AudienceMode, { title: string; message: string }> = {
+      women: {
+        title: 'Women Safety Mode Active',
+        message: 'Escalation sensitivity increased. Alerts will trigger earlier on high-risk zones.',
+      },
+      children: {
+        title: 'Child Safety Mode Active',
+        message: 'Guardian-first alerts enabled with shorter inactivity and SOS thresholds.',
+      },
+      tourists: {
+        title: 'Tourist Safety Mode Active',
+        message: 'Route guidance now prioritizes visibility, crowds, and trusted transit corridors.',
+      },
+    }
+
+    const config = audienceMessages[mode]
+    addNotification(config.title, config.message, 'INFO')
+  }
+
+  const adjustedRiskScore = useMemo<RiskScore | null>(() => {
+    if (!riskScore) {
+      return null
+    }
+
+    const score = Math.max(0, Math.min(100, riskScore.score + audienceRiskBias[audienceMode]))
+    const level = score >= 80 ? 'CRITICAL' : score >= 60 ? 'HIGH' : score >= 35 ? 'MEDIUM' : 'LOW'
+
+    return {
+      ...riskScore,
+      score,
+      level,
+      factors: [audienceModeFactors[audienceMode], ...riskScore.factors],
+    }
+  }, [riskScore, audienceMode])
+
+  const modeAdjustedRoutes = useMemo(() => {
+    return mockRoutes
+      .map((route) => {
+        const adjustedRisk = Math.max(0, Math.min(100, route.riskScore + routeRiskBias[audienceMode]))
+
+        return {
+          ...route,
+          riskScore: adjustedRisk,
+          features: [...route.features, routeModeFeature[audienceMode]],
+        }
+      })
+      .sort((a, b) => a.riskScore - b.riskScore)
+  }, [audienceMode])
 
   return (
     <AuthGate>
       {/* Header */}
       <Header
         title="SafeSpace AI"
-        subtitle="Live safety dashboard"
+        subtitle="Safety intelligence for women, children, and tourists"
       />
 
       {/* Main Content */}
@@ -163,6 +267,36 @@ export default function Dashboard() {
             <p className="text-caption text-text-secondary">LIVE SAFETY STATUS</p>
             <p className="text-body-sm text-text-secondary">SOS ready</p>
           </div>
+          <p className="text-body-sm text-text-secondary mt-3">
+            Audience-focused protection is available for women, children, and tourists.
+          </p>
+        </section>
+
+        <section className="grid md:grid-cols-3 gap-3">
+          {audienceModes.map((mode) => {
+            const Icon = mode.icon
+            const isActiveMode = mode.id === audienceMode
+
+            return (
+              <button
+                key={mode.id}
+                type="button"
+                onClick={() => handleAudienceMode(mode.id)}
+                className={`card-base text-left border transition-all ${
+                  isActiveMode
+                    ? 'border-accent-safe ring-1 ring-accent-safe/50'
+                    : 'border-border-color/80 hover:border-accent-safe/50'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <p className="text-caption text-text-secondary">{mode.badge}</p>
+                  <Icon className="w-4 h-4 text-accent-safe" />
+                </div>
+                <h3 className="text-body-base font-semibold mb-1">{mode.title}</h3>
+                <p className="text-body-sm text-text-secondary">{mode.subtitle}</p>
+              </button>
+            )
+          })}
         </section>
 
         {/* Location Error Alert */}
@@ -174,6 +308,31 @@ export default function Dashboard() {
             onClose={() => {}}
           />
         )}
+
+        <RiskScoreCard riskScore={adjustedRiskScore} isLoading={riskLoading} />
+
+        <section>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h2 className="text-header-lg">Recommended Routes</h2>
+            <p className="text-body-sm text-text-secondary">Mode: {audienceMode}</p>
+          </div>
+          <div className="space-y-4">
+            {modeAdjustedRoutes.map((route, idx) => (
+              <RouteCard
+                key={route.id}
+                route={route}
+                isRecommended={idx === 0}
+                onStartNavigation={() =>
+                  addNotification(
+                    'Navigation Started',
+                    `Using ${audienceMode} safety profile on ${route.distance.toFixed(1)}km route.`,
+                    'INFO'
+                  )
+                }
+              />
+            ))}
+          </div>
+        </section>
 
         {/* Emergency Active Alert */}
         {isActive && (
@@ -256,7 +415,6 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-          </div>
 
           <div className="page-grid-side">
             {/* Current Location */}
@@ -279,9 +437,9 @@ export default function Dashboard() {
             <div className="card-base">
               <p className="text-caption text-text-secondary mb-2">SAFETY COVERAGE</p>
               <div className="space-y-1 text-body-sm text-text-secondary">
-                <p>Women: proactive alerts and escalation.</p>
-                <p>Children: guardian check-ins and SOS.</p>
-                <p>Tourists: route risk guidance.</p>
+                <p>Women: proactive zone alerts + faster escalation routing.</p>
+                <p>Children: guardian-linked check-ins + instant SOS relay.</p>
+                <p>Tourists: route confidence scoring in unfamiliar locations.</p>
               </div>
             </div>
 
@@ -298,7 +456,6 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </div>
 
       {/* SOS Button (Floating) */}
       <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50">

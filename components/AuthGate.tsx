@@ -13,8 +13,14 @@ export function AuthGate({ children }: AuthGateProps) {
 
   useEffect(() => {
     let isMounted = true
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000)
 
-    fetch('/api/auth/me', { credentials: 'include' })
+    fetch('/api/auth/me', {
+      credentials: 'include',
+      cache: 'no-store',
+      signal: controller.signal,
+    })
       .then((res) => {
         if (!isMounted) return
         if (res.ok) {
@@ -29,9 +35,14 @@ export function AuthGate({ children }: AuthGateProps) {
         setStatus('unauth')
         router.replace('/login')
       })
+      .finally(() => {
+        window.clearTimeout(timeoutId)
+      })
 
     return () => {
       isMounted = false
+      controller.abort()
+      window.clearTimeout(timeoutId)
     }
   }, [router])
 
