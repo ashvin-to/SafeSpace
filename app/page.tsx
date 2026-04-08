@@ -10,6 +10,7 @@ import {
   Alert,
   Navigation,
   AuthGate,
+  LocationMap,
 } from '@/components'
 import {
   useRiskScore,
@@ -184,25 +185,24 @@ export default function Dashboard() {
           />
         )}
 
-        <div className="page-grid">
-          <div className="page-grid-main">
-            {/* Risk Score Card */}
-            <RiskScoreCard riskScore={riskScore} isLoading={riskLoading} />
-
-            {/* Safe Routes */}
-            <div>
-              <h2 className="text-header-lg mb-4">Safe Route Options</h2>
-              <div className="space-y-4">
-                {mockRoutes.map((route, idx) => (
-                  <RouteCard
-                    key={route.id}
-                    route={route}
-                    isRecommended={idx === 0}
-                    onStartNavigation={() => handleNavigate(route)}
-                  />
-                ))}
-              </div>
+        {/* Current Location */}
+        {location && (
+          <div className="card-base">
+            <div className="flex items-center gap-2 mb-4">
+              <MapPin className="w-5 h-5 text-text-secondary" />
+              <p className="text-caption text-text-secondary">CURRENT LOCATION</p>
             </div>
+            
+            <LocationMap latitude={location.latitude} longitude={location.longitude} />
+            
+            <p className="text-body-base mt-4">
+              ({location.latitude.toFixed(4)}, {location.longitude.toFixed(4)})
+            </p>
+            <p className="text-body-sm text-text-secondary mt-2">
+              Accuracy: ±{location.accuracy.toFixed(0)}m
+            </p>
+          </div>
+        )}
 
             {/* Emergency Contacts */}
             <div>
