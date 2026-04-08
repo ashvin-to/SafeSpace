@@ -11,8 +11,8 @@ interface HeaderProps {
 
 export function Header({ title, subtitle, action }: HeaderProps) {
   return (
-    <div className="bg-card-bg border-b border-border-color">
-      <div className="max-w-lg mx-auto px-safe-area py-4 flex items-center justify-between">
+    <div className="bg-card-bg/95 border-b border-border-color backdrop-blur-sm">
+      <div className="app-shell px-safe-area py-4 lg:py-5 flex items-center justify-between gap-4">
         <div className="flex-1">
           <h1 className="text-header-lg">{title}</h1>
           {subtitle && (

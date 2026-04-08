@@ -60,9 +60,10 @@ export default function SettingsPage() {
     <AuthGate>
       <Header title="Settings" subtitle="Customize your SafeSpace experience" />
 
-      <div className="px-safe-area py-6 space-y-6">
+      <div className="px-safe-area py-6 lg:py-8 space-y-6">
         {/* Safety Preferences */}
-        <div>
+        <div className="page-grid">
+          <div className="page-grid-main">
           <h2 className="text-header-lg mb-4">Safety Preferences</h2>
           <div className="space-y-4">
             <div className="card-base">
@@ -122,6 +123,24 @@ export default function SettingsPage() {
               }
             />
           </div>
+          </div>
+
+          <div className="page-grid-side">
+            <div className="card-base">
+              <p className="text-caption text-text-secondary font-semibold mb-2">PROFILE STATUS</p>
+              <p className="text-body-sm text-text-secondary">Logged in as <span className="text-text-primary font-semibold">user@example.com</span></p>
+              <p className="text-body-sm text-text-secondary mt-2">Safety profile adapts based on your location, route selection, and risk tolerance.</p>
+            </div>
+
+            <div className="card-base">
+              <p className="text-caption text-text-secondary font-semibold mb-2">QUICK ACTIONS</p>
+              <button className="btn-secondary w-full mb-2">Change Password</button>
+              <button onClick={handleLogout} className="btn-ghost w-full text-accent-danger hover:bg-accent-danger hover:bg-opacity-10">
+                <LogOut className="w-4 h-4 mr-2 inline" />
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Security & Privacy */}
@@ -161,25 +180,6 @@ export default function SettingsPage() {
               description="Help us improve SafeSpace"
               onClick={() => console.log('Report bug')}
             />
-          </div>
-        </div>
-
-        {/* Account */}
-        <div>
-          <h2 className="text-header-lg mb-4">Account</h2>
-          <div className="space-y-4">
-            <p className="text-body-sm text-text-secondary">
-              Logged in as: <span className="font-semibold">user@example.com</span>
-            </p>
-
-            <button className="btn-secondary w-full">
-              Change Password
-            </button>
-
-            <button onClick={handleLogout} className="btn-ghost w-full text-accent-danger hover:bg-accent-danger hover:bg-opacity-10">
-              <LogOut className="w-4 h-4 mr-2 inline" />
-              Logout
-            </button>
           </div>
         </div>
 
