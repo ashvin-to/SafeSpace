@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  @apply m-0 p-0 box-border;
+}
+
+html,
+body {
+  @apply w-full h-full bg-background text-text-primary font-sans;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* SafeSpace AI Custom Styles */
+@layer components {
+  .btn-sos {
+    @apply w-[88px] h-[88px] rounded-full bg-accent-danger text-white flex items-center justify-center cursor-pointer font-bold text-lg transition-all duration-200 shadow-sos hover:scale-95 active:scale-90 flex-col;
+  }
+
+  .btn-sos-mini {
+    @apply w-[64px] h-[64px];
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 rounded-btn bg-accent-danger text-white font-semibold transition-all duration-200 hover:brightness-110 active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 rounded-btn bg-card-bg text-text-primary font-semibold border border-border-color transition-all duration-200 hover:brightness-125 active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply px-6 py-3 rounded-btn text-text-primary font-semibold transition-all duration-200 hover:bg-card-bg active:scale-95;
+  }
+
+  .card-base {
+    @apply bg-card-bg border border-border-color rounded-card p-6 shadow-card;
+  }
+
+  .risk-low {
+    @apply text-accent-safe;
+  }
+
+  .risk-medium {
+    @apply text-accent-caution;
+  }
+
+  .risk-high {
+    @apply text-accent-danger;
+  }
+
+  .risk-bar {
+    @apply w-full h-2 rounded-full bg-card-bg overflow-hidden;
+  }
+
+  .risk-bar-fill {
+    @apply h-full rounded-full transition-all duration-500;
+  }
+}
+
+/* Smooth transitions */
+@layer utilities {
+  .transition-smooth {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .animate-pulse-sos {
+    @apply animate-pulse-sos;
+  }
+}
+
+/* Responsive utilities */
+@media (max-width: 480px) {
+  body {
+    font-size: 16px;
+  }
+}
